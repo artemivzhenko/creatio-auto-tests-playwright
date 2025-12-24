@@ -1,0 +1,129 @@
+{
+  "pages": [
+    {
+      "name": "TestPage",
+      "url": "/0/Shell/#Card/UsrTestPage_FormPage/edit/fe8432a7-4917-444d-a934-600ac815ac3b",
+      "type": "FreedomUI",
+      "fields": [
+        {
+          "type": "Text",
+          "subtype": "Text",
+          "title": "Name",
+          "code": "Input_zsrmb1i",
+          "required": true,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Text",
+          "subtype": "RichText",
+          "title": "RichText",
+          "code": "RichTextEditor_46xg6fy",
+          "required": true,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Text",
+          "subtype": "Link",
+          "title": "Link",
+          "code": "WebInput_nwd7272",
+          "required": false,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Text",
+          "subtype": "Email",
+          "title": "Email",
+          "code": "EmailInput_int43pb",
+          "required": false,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Text",
+          "subtype": "PhoneNumber",
+          "title": "PhoneNumber",
+          "code": "PhoneNumber",
+          "required": true,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "DateTime",
+          "subtype": "Time",
+          "title": "Time",
+          "code": "DateTimePicker_trvp85o",
+          "required": false,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "DateTime",
+          "subtype": "Date",
+          "title": "Date",
+          "code": "DateTimePicker_2ptldop",
+          "required": false,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "DateTime",
+          "subtype": "DateTime",
+          "title": "DateTime",
+          "code": "DateTimePicker_743h6kw",
+          "required": false,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Number",
+          "subtype": "Integer",
+          "title": "Integer",
+          "code": "NumberInput_to84api",
+          "required": false,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Boolean",
+          "subtype": "",
+          "title": "Boolean",
+          "code": "Checkbox_3qmzec5",
+          "required": false,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Lookup",
+          "subtype": "",
+          "title": "Account",
+          "code": "ComboBox_72as49x",
+          "required": true,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Lookup",
+          "subtype": "",
+          "title": "Contact",
+          "code": "ComboBox_gbg5vsp",
+          "required": false,
+          "readOnly": false,
+          "placeholder": ""
+        },
+        {
+          "type": "Lookup",
+          "subtype": "",
+          "title": "Contact",
+          "code": "ComboBox_xmf3buc",
+          "required": false,
+          "readOnly": true,
+          "placeholder": ""
+        }
+      ],
+      "buttons": []
+    }
+  ]
+}

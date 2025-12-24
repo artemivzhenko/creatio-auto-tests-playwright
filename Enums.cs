@@ -13,6 +13,7 @@
         DateTimeField = 2,
         NumberField = 3,
         BooleanField = 4,
+        LookupField = 5
     }
 
     /// <summary>

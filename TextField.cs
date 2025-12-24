@@ -88,8 +88,13 @@ namespace CreatioAutoTestsPlaywright.Frontend
         /// Clear text value inside the field (if editable).
         /// For Email fields uses SetValueAsync with empty string to ensure proper state.
         /// </summary>
+        /// <summary>
+        /// Clear current field value in a way that is compatible with hidden inputs.
+        /// For Email it will delegate to SetValueAsync("") to reuse email-specific logic.
+        /// </summary>
         public async Task ClearValueAsync(bool debug = false)
         {
+            // Email has its own mechanics (hidden actual input, "Add" button, etc.).
             if (ContentType == TextFieldTypeEnum.Email)
             {
                 await SetValueAsync(string.Empty, debug).ConfigureAwait(false);
@@ -105,25 +110,76 @@ namespace CreatioAutoTestsPlaywright.Frontend
 
             var input = GetValueLocator(root);
 
+            // First check if Playwright considers the input visible.
+            bool isVisible = false;
             try
             {
-                await input.FillAsync(string.Empty).ConfigureAwait(false);
-                if (debug)
-                {
-                    FieldLogger.Write(
-                        $"[Field:{FieldTypeName}] ClearValueAsync: field '{Title}' (Code='{Code}') cleared.");
-                }
+                isVisible = await input.IsVisibleAsync().ConfigureAwait(false);
             }
             catch (PlaywrightException ex)
             {
                 if (debug)
                 {
                     FieldLogger.Write(
-                        $"[Field:{FieldTypeName}] ClearValueAsync Playwright error for '{Title}' (Code='{Code}'): {ex.Message}");
+                        $"[Field:{FieldTypeName}] ClearValueAsync: IsVisibleAsync failed for '{Title}' (Code='{Code}'): {ex.Message}");
                 }
-                throw;
+            }
+
+            if (isVisible)
+            {
+                // Normal path: visible input, FillAsync should work fine.
+                try
+                {
+                    await input.FillAsync(string.Empty).ConfigureAwait(false);
+                    if (debug)
+                    {
+                        FieldLogger.Write(
+                            $"[Field:{FieldTypeName}] ClearValueAsync: field '{Title}' (Code='{Code}') cleared via FillAsync.");
+                    }
+                }
+                catch (PlaywrightException ex)
+                {
+                    if (debug)
+                    {
+                        FieldLogger.Write(
+                            $"[Field:{FieldTypeName}] ClearValueAsync: FillAsync failed for '{Title}' (Code='{Code}'): {ex.Message}");
+                    }
+                    throw;
+                }
+            }
+            else
+            {
+                // Fallback: input exists but is hidden (e.g. crt-input-control-element-hidden).
+                // Use JS to clear value and fire input event so Creatio reacts properly.
+                try
+                {
+                    await input.EvaluateAsync(
+                        @"(el) => {
+                    if (!el) { return; }
+                    el.value = '';
+                    const evt = new Event('input', { bubbles: true, cancelable: true });
+                    el.dispatchEvent(evt);
+                }"
+                    ).ConfigureAwait(false);
+
+                    if (debug)
+                    {
+                        FieldLogger.Write(
+                            $"[Field:{FieldTypeName}] ClearValueAsync: field '{Title}' (Code='{Code}') cleared via JS fallback.");
+                    }
+                }
+                catch (PlaywrightException ex)
+                {
+                    if (debug)
+                    {
+                        FieldLogger.Write(
+                            $"[Field:{FieldTypeName}] ClearValueAsync: JS fallback failed for '{Title}' (Code='{Code}'): {ex.Message}");
+                    }
+                    throw;
+                }
             }
         }
+
 
         public void ClearValue(bool debug = false)
         {
@@ -135,6 +191,12 @@ namespace CreatioAutoTestsPlaywright.Frontend
         /// Email requires special handling because the actual input may be hidden
         /// until "add email" button is clicked.
         /// </summary>
+        /// <summary>
+        /// Set text value into the field.
+        /// Email requires special handling because the actual input may be hidden
+        /// until "add email" button is clicked.
+        /// For other content types, if the input is hidden, JS fallback is used.
+        /// </summary>
         public async Task SetValueAsync(string value, bool debug = false)
         {
             var root = await FindFieldContainerAsync(debug).ConfigureAwait(false);
@@ -144,6 +206,7 @@ namespace CreatioAutoTestsPlaywright.Frontend
                     $"Field '{Title}' (Code='{Code}') not found on page.");
             }
 
+            // Special handling for Email fields (crt-email-input with "Add" button etc.).
             if (ContentType == TextFieldTypeEnum.Email)
             {
                 await SetEmailValueInternalAsync(root, value, debug).ConfigureAwait(false);
@@ -152,27 +215,76 @@ namespace CreatioAutoTestsPlaywright.Frontend
 
             var input = GetValueLocator(root);
 
+            // Check visibility before we try FillAsync.
+            bool isVisible = false;
             try
             {
-                await input.FillAsync(value ?? string.Empty).ConfigureAwait(false);
-                if (debug)
-                {
-                    FieldLogger.Write(
-                        $"[Field:{FieldTypeName}] SetValueAsync '{Title}' (Code='{Code}') = '{value}'.");
-                }
+                isVisible = await input.IsVisibleAsync().ConfigureAwait(false);
             }
             catch (PlaywrightException ex)
             {
                 if (debug)
                 {
                     FieldLogger.Write(
-                        $"[Field:{FieldTypeName}] SetValueAsync Playwright error for '{Title}' (Code='{Code}'): {ex.Message}");
+                        $"[Field:{FieldTypeName}] SetValueAsync: IsVisibleAsync failed for '{Title}' (Code='{Code}'): {ex.Message}");
                 }
+            }
 
-                throw;
+            if (isVisible)
+            {
+                // Normal path: visible input, use FillAsync.
+                try
+                {
+                    await input.FillAsync(value ?? string.Empty).ConfigureAwait(false);
+                    if (debug)
+                    {
+                        FieldLogger.Write(
+                            $"[Field:{FieldTypeName}] SetValueAsync '{Title}' (Code='{Code}') = '{value}' via FillAsync.");
+                    }
+                }
+                catch (PlaywrightException ex)
+                {
+                    if (debug)
+                    {
+                        FieldLogger.Write(
+                            $"[Field:{FieldTypeName}] SetValueAsync: FillAsync failed for '{Title}' (Code='{Code}'): {ex.Message}");
+                    }
+                    throw;
+                }
+            }
+            else
+            {
+                // Fallback path: input exists but is not visible (Creatio phone/web, hidden input, etc.).
+                // We set the value via JS and dispatch an 'input' event.
+                try
+                {
+                    await input.EvaluateAsync(
+                        @"(el, v) => {
+                    if (!el) { return; }
+                    el.value = v ?? '';
+                    const evt = new Event('input', { bubbles: true, cancelable: true });
+                    el.dispatchEvent(evt);
+                }",
+                        value ?? string.Empty
+                    ).ConfigureAwait(false);
+
+                    if (debug)
+                    {
+                        FieldLogger.Write(
+                            $"[Field:{FieldTypeName}] SetValueAsync '{Title}' (Code='{Code}') = '{value}' via JS fallback (hidden input).");
+                    }
+                }
+                catch (PlaywrightException ex)
+                {
+                    if (debug)
+                    {
+                        FieldLogger.Write(
+                            $"[Field:{FieldTypeName}] SetValueAsync: JS fallback failed for '{Title}' (Code='{Code}'): {ex.Message}");
+                    }
+                    throw;
+                }
             }
         }
-
         public void SetValue(string value, bool debug = false)
         {
             SetValueAsync(value, debug).GetAwaiter().GetResult();
